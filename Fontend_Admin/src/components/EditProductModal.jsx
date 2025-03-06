@@ -5,6 +5,22 @@ import { Input } from "@/components/ui/input";
 
 const EditProductModal = ({ isEditModalOpen, setIsEditModalOpen, selectedProduct, productData }) => {
   const [colors, setColors] = useState([]);
+  const [tenSanPham, setTenSanPham] = useState("");
+  const [maThuongHieu, setMaThuongHieu] = useState("");
+  const [loaiSanPham, setLoaiSanPham] = useState("");
+  const [moTa, setMoTa] = useState("");
+  const [errors, setErrors] = useState({});
+  // Khởi tạo dữ liệu khi productData thay đổi
+  useEffect(() => {
+    if (productData && productData.length > 0) {
+      const productInfo = productData[0];
+      setTenSanPham(productInfo.tenSanPham || "");
+      setMaThuongHieu(productInfo.maThuongHieu || "");
+      setLoaiSanPham(productInfo.loaiSanPham || "");
+      setMoTa(productInfo.moTa || "");
+      initializeColors(productData);
+    }
+  }, [productData]);
 
   const initializeColors = (data) => {
     if (data && data.length > 0) {
@@ -22,10 +38,6 @@ const EditProductModal = ({ isEditModalOpen, setIsEditModalOpen, selectedProduct
     }
   };
 
-  useEffect(() => {
-    initializeColors(productData);
-  }, [productData]);
-
   const handleAddColor = () => {
     setColors([...colors, { color: '#ffffff', sizes: [{ size: 'S', price: '', quantity: '' }] }]);
   };
@@ -42,6 +54,11 @@ const EditProductModal = ({ isEditModalOpen, setIsEditModalOpen, selectedProduct
     setColors(newColors);
   };
 
+  const handleRemoveColor = (colorIndex) => {
+    const newColors = colors.filter((_, index) => index !== colorIndex);
+    setColors(newColors);
+  };
+
   const handleInputChange = (colorIndex, sizeIndex, field, value) => {
     const newColors = [...colors];
     if (field === 'color') {
@@ -52,13 +69,92 @@ const EditProductModal = ({ isEditModalOpen, setIsEditModalOpen, selectedProduct
     setColors(newColors);
   };
 
-  const productInfo = productData?.[0] || {};
+  const handleSaveChanges = async () => {
+    const updatedData = colors.map(colorItem => ({
+      ID: selectedProduct?.id || "A00001",
+      TenSanPham: tenSanPham,
+      MaThuongHieu: parseInt(maThuongHieu),
+      LoaiSanPham: parseInt(loaiSanPham),
+      MauSac: colorItem.color.slice(1),
+      MoTa: moTa || null,
+      HinhAnhs: null,
+      Details: colorItem.sizes.map(sizeItem => ({
+        KichThuoc: sizeItem.size.padEnd(10, ' ').trim(),
+        SoLuong: parseInt(sizeItem.quantity),
+        Gia: parseInt(sizeItem.price)
+      }))
 
+    }));
+  
+    let errorList = {};
+    let hasError = false;
+    const colorSet = new Set();
+
+    updatedData.forEach((item, index) => {
+
+      if (colorSet.has(item.MauSac)) {
+        errorList[`${index}-mauSac`] = `- Màu ${item.MauSac} đã tồn tại.`;
+        hasError = true;
+      } else {
+        colorSet.add(item.MauSac);
+      }
+  
+      const sizeSet = new Set();
+      item.Details.forEach((Detail, detailIndex) => {
+
+        if (sizeSet.has(Detail.KichThuoc)) {
+          errorList[`${index}-details-${detailIndex}-kichThuoc`] = `- Kích thước ${Detail.KichThuoc} của mã màu ${item.MauSac} đã tồn tại.`;
+          hasError = true;
+        } else {
+          sizeSet.add(Detail.KichThuoc);
+        }
+  
+
+        if (Detail.SoLuong <= 0) {
+          errorList[`${index}-details-${detailIndex}-soLuong`] = `- Số lượng của kích thước ${Detail.KichThuoc} thuộc mã màu ${item.MauSac} phải lớn hơn 0.`;
+          hasError = true;
+        }
+  
+        if (Detail.Gia <= 0) {
+          errorList[`${index}-details-${detailIndex}-gia`] = `- Giá của kích thước ${Detail.KichThuoc} thuộc mã màu ${item.MauSac} phải lớn hơn 0.`;
+          hasError = true;
+        }
+      });
+    });
+  
+    if (hasError) {
+      setErrors(errorList);
+    } else {
+      setErrors({});
+      console.log("Lưu thành công", updatedData);
+
+    // Call API
+    try {
+      const response = await fetch("http://localhost:5261/api/SanPham/EditSanPham", {
+        method: "POST", 
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(updatedData),
+      });
+
+      if (response.ok) {
+        alert("Cập nhật sản phẩm thành công!");
+        setIsEditModalOpen(false); 
+      } else {
+        alert("Có lỗi xảy ra khi cập nhật sản phẩm.");
+      }
+    } catch (error) {
+      console.error("Lỗi khi gửi dữ liệu:", error);
+      alert("Có lỗi xảy ra khi gửi dữ liệu tới API.");
+    }
+    }
+  };
   return (
     <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
-      <DialogContent className="max-w-4xl p-6 overflow-y-auto max-h-[90vh]">
+      <DialogContent className="max-w-7xl p-6 overflow-y-auto max-h-[90vh]">
         <DialogHeader>
-          <DialogTitle className="text-2xl font-bold">Chỉnh sửa thông tin sản phẩm</DialogTitle>
+          <DialogTitle className="text-2xl font-bold">Chỉnh sửa thông tin sản phẩm</DialogTitle>          
         </DialogHeader>
         <div className="py-4">
           <div className="grid grid-cols-12 gap-4">
@@ -66,51 +162,67 @@ const EditProductModal = ({ isEditModalOpen, setIsEditModalOpen, selectedProduct
               <div className="space-y-4">
                 <div>
                   <label className="block mb-1 font-medium">Tên Sản Phẩm</label>
-                  <Input defaultValue={productInfo.tenSanPham} className="w-full" />
+                  <Input
+                    value={tenSanPham}
+                    onChange={(e) => setTenSanPham(e.target.value)}
+                    className="w-full"
+                  />
                 </div>
                 <div>
                   <label className="block mb-1 font-medium">Thương Hiệu</label>
-                  <select className="w-full p-2 border rounded-md">
-                    <option value={productInfo.maThuongHieu}>
-                      {productInfo.maThuongHieu === 1 ? 'Gucci' : 'Unknown'}
-                    </option>
+                  <select
+                    value={maThuongHieu}
+                    onChange={(e) => setMaThuongHieu(e.target.value)}
+                    className="w-full p-2 border rounded-md"
+                  >
+                    <option value="1">Gucci</option>
                   </select>
                 </div>
                 <div>
                   <label className="block mb-1 font-medium">Loại Sản Phẩm</label>
-                  <select className="w-full p-2 border rounded-md">
-                    <option value={productInfo.loaiSanPham}>
-                      {productInfo.loaiSanPham === 1 ? 'Áo' : 'Unknown'}
-                    </option>
+                  <select
+                    value={loaiSanPham}
+                    onChange={(e) => setLoaiSanPham(e.target.value)}
+                    className="w-full p-2 border rounded-md"
+                  >
+                    <option value="1">Áo</option>
                   </select>
                 </div>
               </div>
 
               <div className="mt-4">
                 <div className="grid grid-cols-12 text-center font-medium">
-                  <div className="col-span-3">Màu Sắc</div>
-                  <div className="col-span-3">Kích Thước</div>
-                  <div className="col-span-3">Đơn Giá</div>
-                  <div className="col-span-3">Số Lượng</div>
+                  <div className="col-span-2 ml-12">Màu Sắc</div>
+                  <div className="col-span-2 ml-10">Kích Thước</div>
+                  <div className="col-span-2 ml-5">Đơn Giá</div>
+                  <div className="col-span-2 ml-3">Số Lượng</div>
                 </div>
               </div>
 
               <div className="max-h-[400px] overflow-y-auto">
                 {colors.map((colorItem, colorIndex) => (
-                  <div key={colorIndex} className="mt-4 border p-4 rounded">
-                    <div className="grid grid-cols-12 gap-4">
-                      <div className="col-span-3 flex justify-center">
+                  <div key={colorIndex} className="mt-4 border p-4 rounded relative">
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      onClick={() => handleRemoveColor(colorIndex)}
+                      className="absolute top-2 right-2"
+                    >
+                      X
+                    </Button>
+                    <div className="grid grid-cols-10 gap-4 border rounded p-4">
+                      <div className="col-span-2 flex justify-center">
                         <input
                           type="color"
                           value={colorItem.color}
                           onChange={(e) => handleInputChange(colorIndex, null, 'color', e.target.value)}
-                          className="w-[100px] h-[100px] ml-4 border-2 border-gray-300 rounded"
+                          className="w-[100px] h-[100px] border-2 border-gray-300 rounded"
                         />
                       </div>
-                      <div className="col-span-9">
+                      <div className="col-span-8">
                         {colorItem.sizes.map((sizeItem, sizeIndex) => (
                           <div key={sizeIndex} className="grid grid-cols-12 gap-2 items-center mb-2">
-                            <div className="col-span-3">
+                            <div className="col-span-2">
                               <select
                                 value={sizeItem.size}
                                 onChange={(e) => handleInputChange(colorIndex, sizeIndex, 'size', e.target.value)}
@@ -142,19 +254,20 @@ const EditProductModal = ({ isEditModalOpen, setIsEditModalOpen, selectedProduct
                                 className="w-[100px]"
                               />
                             </div>
-                            <div className="col-span-4 flex items-center gap-2">
+                            <div className="col-span-2 flex items-left justify-start gap-2 ml-3">
                               {colorItem.sizes.length > 1 && (
                                 <Button
                                   variant="destructive"
                                   size="sm"
                                   onClick={() => handleRemoveSize(colorIndex, sizeIndex)}
-                                  className="ml-4"
                                 >
                                   x
                                 </Button>
                               )}
                               {sizeIndex === colorItem.sizes.length - 1 && (
-                                <Button onClick={() => handleAddSize(colorIndex)} size="sm">+</Button>
+                                <Button onClick={() => handleAddSize(colorIndex)} size="sm">
+                                  +
+                                </Button>
                               )}
                             </div>
                           </div>
@@ -165,7 +278,7 @@ const EditProductModal = ({ isEditModalOpen, setIsEditModalOpen, selectedProduct
                 ))}
               </div>
 
-              <div className="mt-4 flex justify-center">
+              <div className="mt-4 flex justify-center ml-10">
                 <Button onClick={handleAddColor} className="w-[250px]">
                   +
                 </Button>
@@ -183,9 +296,22 @@ const EditProductModal = ({ isEditModalOpen, setIsEditModalOpen, selectedProduct
                 <label className="block mb-1 font-medium">Mô Tả</label>
                 <textarea
                   className="w-full h-[200px] p-2 border rounded-md"
-                  defaultValue={productInfo.moTa || ''}
+                  value={moTa}
+                  onChange={(e) => setMoTa(e.target.value)}
                   placeholder="Nhập mô tả sản phẩm"
                 />
+              </div>
+              <div>
+                    {Object.keys(errors).length > 0 && (
+                  <div className="text-red-500 mb-4">
+                    Đã xảy ra lỗi: 
+                    <ul>
+                      {Object.values(errors).map((error, index) => (
+                        <li key={index}>{error}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -195,7 +321,7 @@ const EditProductModal = ({ isEditModalOpen, setIsEditModalOpen, selectedProduct
           <Button variant="outline" onClick={() => setIsEditModalOpen(false)}>
             Hủy
           </Button>
-          <Button>Lưu Thay Đổi</Button>
+          <Button onClick={handleSaveChanges}>Lưu Thay Đổi</Button>
         </div>
       </DialogContent>
     </Dialog>
