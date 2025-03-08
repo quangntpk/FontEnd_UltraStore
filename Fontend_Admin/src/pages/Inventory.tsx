@@ -161,9 +161,10 @@ const Comments = () => {
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Bình Luận</h1>
         </div>
-        <Button className="bg-purple hover:bg-purple-medium">
+        {/*} <Button className="bg-purple hover:bg-purple-medium">
           <Plus className="mr-2 h-4 w-4" /> Thêm Bình Luận
         </Button>
+        */}
       </div>
 
       <Card>
@@ -183,10 +184,10 @@ const Comments = () => {
               />
             </div>
             <div className="flex gap-2 self-end">
-              <Button variant="outline" size="sm" className="h-9">
+              {/* <Button variant="outline" size="sm" className="h-9">
                 <Filter className="h-4 w-4 mr-2" />
                 Lọc
-              </Button>
+              </Button> */}
               <Button variant="outline" size="sm" className="h-9" onClick={fetchComments}>
                 <RefreshCw className="h-4 w-4 mr-2" />
                 Làm Mới
@@ -222,8 +223,25 @@ const Comments = () => {
                       <TableCell>{item.maNguoiDung}</TableCell>
                       <TableCell>{item.noiDungBinhLuan}</TableCell>
                       <TableCell>
-                        {item.trangThai === 0 ? "Chưa Duyệt" : item.trangThai === 1 ? "Đã Duyệt" : ""}
+                        <span
+                          className={
+                            item.trangThai === 1
+                              ? 'bg-green-100 text-green-800 px-2 py-1 rounded hover:bg-green-100'  // "Đã Duyệt" (green)
+                              : item.trangThai === 0
+                                ? 'bg-red-100 text-red-800 px-2 py-1 rounded hover:bg-red-100'  // "Chưa Duyệt" (red)
+                                : ''
+                          }
+                        >
+                          {item.trangThai === 0
+                            ? "Chưa Duyệt"
+                            : item.trangThai === 1
+                              ? "Đã Duyệt"
+                              : ""
+                          }
+                        </span>
                       </TableCell>
+
+
                       <TableCell>
                         {item.ngayBinhLuan ? (() => {
                           const date = new Date(item.ngayBinhLuan);
