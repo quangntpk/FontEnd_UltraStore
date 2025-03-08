@@ -11,7 +11,7 @@ import Orders from "./pages/Orders";
 import Products from "./pages/Products";
 import Customers from "./pages/Customers";
 import Analytics from "./pages/Analytics";
-import Inventory from "./pages/Inventory";
+import Inventory from "./pages/inventory";
 import Invoices from "./pages/Invoices";
 import Settings from "./pages/Settings";
 

@@ -74,7 +74,6 @@ const Sidebar = () => {
     { to: '/customers', icon: Users, label: 'Customers' },
     { to: '/analytics', icon: BarChart, label: 'Analytics' },
     { to: '/invoices', icon: FileText, label: 'Invoices' },
-    { to: '/inventory', icon: Store, label: 'Inventory' },
     { to: '/inventory', icon: Store, label: 'Quản lý bình luận' },
   ];
 
