@@ -70,11 +70,12 @@ const Sidebar = () => {
   const mainNavItems = [
     { to: '/', icon: LayoutDashboard, label: 'Dashboard' },
     { to: '/orders', icon: ShoppingCart, label: 'Orders' },
-    { to: '/products', icon: Package, label: 'Products' },
+    { to: '/products', icon: Package, label: 'Sản Phẩm' },
     { to: '/customers', icon: Users, label: 'Customers' },
     { to: '/analytics', icon: BarChart, label: 'Analytics' },
     { to: '/invoices', icon: FileText, label: 'Invoices' },
-    { to: '/inventory', icon: Store, label: 'Quản lý bình luận' },
+    { to: '/inventory', icon: Store, label: 'Inventory' },
+    { to: '/combos', icon: Zap, label: 'Combo Sản Phẩm'}
   ];
 
   const additionalNavItems = [
